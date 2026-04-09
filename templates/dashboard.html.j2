@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube 運営ダッシュボード</title>
+  <link rel="stylesheet" href="../static/tailwind.css">
+  <style>
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .badge-green    { background-color: rgb(20 83 45 / 0.6);  color: rgb(134 239 172); border-color: rgb(21 128 61 / 0.5); }
+    .dot-green      { background-color: rgb(74 222 128); }
+    .badge-blue     { background-color: rgb(23 37 84 / 0.6);  color: rgb(147 197 253); border-color: rgb(29 78 216 / 0.5); }
+    .dot-blue       { background-color: rgb(96 165 250); }
+    .badge-yellow   { background-color: rgb(66 32 6 / 0.6);   color: rgb(253 224 71);  border-color: rgb(161 98 7 / 0.5); }
+    .dot-yellow     { background-color: rgb(250 204 21); }
+    .badge-orange   { background-color: rgb(67 20 7 / 0.6);   color: rgb(253 186 116); border-color: rgb(194 65 12 / 0.5); }
+    .dot-orange     { background-color: rgb(251 146 60); }
+    .badge-red      { background-color: rgb(69 10 10 / 0.6);  color: rgb(252 165 165); border-color: rgb(185 28 28 / 0.5); }
+    .dot-red        { background-color: rgb(248 113 113); }
+    .badge-purple   { background-color: rgb(46 16 101 / 0.6); color: rgb(216 180 254); border-color: rgb(109 40 217 / 0.5); }
+    .dot-purple     { background-color: rgb(192 132 252); }
+    .badge-teal     { background-color: rgb(4 47 46 / 0.6);   color: rgb(94 234 212);  border-color: rgb(15 118 110 / 0.5); }
+    .dot-teal       { background-color: rgb(45 212 191); }
+    .badge-gray     { background-color: rgb(31 41 55 / 0.6);  color: rgb(209 213 219); border-color: rgb(75 85 99 / 0.5); }
+    .dot-gray       { background-color: rgb(156 163 175); }
+    .badge-darkgray { background-color: rgb(17 24 39 / 0.6);  color: rgb(156 163 175); border-color: rgb(55 65 81 / 0.5); }
+    .dot-darkgray   { background-color: rgb(107 114 128); }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen p-8" style="font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;">
+
+  {# ヘッダー #}
+  <div class="mb-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">YouTube 運営スケジュール</h1>
+        <p class="text-gray-400 text-sm mt-1">最終更新: {{ generated_at }}</p>
+      </div>
+      <div class="text-right">
+        <p class="text-gray-500 text-xs">Powered by</p>
+        <p class="text-gray-300 text-sm font-semibold">かっ飛びゴルフ塾</p>
+      </div>
+    </div>
+  </div>
+
+  {# ワークフロー進行ステップバー #}
+  <div class="mb-8 bg-gray-900 border border-gray-800 rounded-xl px-6 py-4">
+    <p class="text-gray-500 text-xs mb-3 font-medium">制作フロー</p>
+    <div class="flex items-center gap-1 flex-wrap">
+      {% set badge_map = {
+        "素材確認中":        "darkgray",
+        "依頼前":            "gray",
+        "依頼中":            "teal",
+        "編集中":            "blue",
+        "ディレクター確認中": "yellow",
+        "クライアント確認中": "orange",
+        "修正中":            "red",
+        "YouTube公開作業":   "purple",
+        "完了":              "green"
+      } %}
+      {% for s in statuses %}
+        {% set color = badge_map.get(s, "gray") %}
+        <span class="text-xs px-2 py-1 rounded badge-{{ color }} border">{{ s }}</span>
+        {% if not loop.last %}<span class="text-gray-600 text-xs">›</span>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  {# サマリーカード（動的集計） #}
+  <div class="grid grid-cols-5 gap-4 mb-8">
+    {% for item in summary_display %}
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+      <p class="text-3xl font-bold {{ item.color }}">{{ summary.get(item.status.value, 0) }}</p>
+      <p class="text-xs text-gray-400 mt-1">{{ item.status.value }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# スケジュールテーブル #}
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800">
+      <h2 class="text-base font-semibold text-gray-100">動画スケジュール一覧</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-gray-800 text-gray-400 text-xs font-semibold">
+            <th class="px-5 py-3 text-left">公開日時</th>
+            <th class="px-5 py-3 text-left">動画タイトル</th>
+            <th class="px-5 py-3 text-left">依頼日時</th>
+            <th class="px-5 py-3 text-left">編集者</th>
+            <th class="px-5 py-3 text-left">ステータス</th>
+            <th class="px-5 py-3 text-left">編集完了日</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for video in videos %}
+          <tr class="hover:bg-gray-800/40 transition-colors {% if video.urgent %}border-l-2 border-red-500{% endif %}">
+
+            {# 公開日（緊急ハイライト） #}
+            <td class="px-5 py-4 whitespace-nowrap">
+              {% if video.urgent %}
+                <span class="text-red-400 font-semibold">{{ video.publish_date }}</span>
+                {% if video.days_until == 0 %}
+                  <span class="ml-1.5 text-xs bg-red-900/60 text-red-300 px-1.5 py-0.5 rounded border border-red-700/40">今日</span>
+                {% elif video.days_until == 1 %}
+                  <span class="ml-1.5 text-xs bg-red-900/60 text-red-300 px-1.5 py-0.5 rounded border border-red-700/40">明日</span>
+                {% else %}
+                  <span class="ml-1.5 text-xs bg-orange-900/60 text-orange-300 px-1.5 py-0.5 rounded border border-orange-700/40">あと{{ video.days_until }}日</span>
+                {% endif %}
+              {% else %}
+                <span class="text-gray-300">{{ video.publish_date }}</span>
+              {% endif %}
+            </td>
+
+            <td class="px-5 py-4 font-medium text-white">{{ video.title }}</td>
+            <td class="px-5 py-4 text-gray-400 whitespace-nowrap">{{ video.request_date }}</td>
+            <td class="px-5 py-4 text-gray-300">{{ video.editor }}</td>
+
+            {# ステータスバッジ #}
+            <td class="px-5 py-4">
+              {% set color = badge_map.get(video.status, "gray") %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border badge-{{ color }}">
+                <span class="w-1.5 h-1.5 rounded-full dot-{{ color }}"></span>{{ video.status }}
+              </span>
+            </td>
+
+            <td class="px-5 py-4 text-gray-400">{{ video.complete_date }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# フッター #}
+  <div class="mt-6 text-center text-gray-500 text-xs">
+    このダッシュボードは Google スプレッドシートのデータを元に自動生成されています
+  </div>
+
+</body>
+</html>

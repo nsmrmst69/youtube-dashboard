@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- ジョブの識別子（一意であれば何でもOK） -->
+  <key>Label</key>
+  <string>com.youtube-dashboard</string>
+
+  <!-- 実行するコマンド（python のフルパスを使う） -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>python</string>
+    <string>/Users/masatonishimori/src/youtube-dashboard/dashboard.py</string>
+  </array>
+
+  <!-- 毎朝10時に実行 -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>10</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <!-- 作業ディレクトリ（.env や credentials.json の読み込み基準） -->
+  <key>WorkingDirectory</key>
+  <string>/Users/masatonishimori/src/youtube-dashboard</string>
+
+  <!-- ログ出力先 -->
+  <key>StandardOutPath</key>
+  <string>/Users/masatonishimori/src/youtube-dashboard/logs/launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/masatonishimori/src/youtube-dashboard/logs/launchd_error.log</string>
+</dict>
+</plist>
