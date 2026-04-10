@@ -4,115 +4,278 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YouTube 報告自動化ツール｜システム構成図</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      background: #0d1117;
-      color: #e6edf3;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Hiragino Sans"', 'sans-serif'],
+          }
+        }
+      }
     }
-
-    header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #f0f6fc;
-      margin-bottom: 8px;
-    }
-
-    header p {
-      font-size: 0.875rem;
-      color: #8b949e;
-    }
-
-    .diagram-container {
-      width: 100%;
-      max-width: 1100px;
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    }
-
-    .diagram-container img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    .download-bar {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-top: 24px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-
-    .btn:hover { opacity: 0.85; }
-
-    .btn-primary {
-      background: #238636;
-      color: #fff;
-      border: 1px solid #2ea043;
-    }
-
-    .btn-secondary {
-      background: #21262d;
-      color: #e6edf3;
-      border: 1px solid #30363d;
-    }
-
-    footer {
-      margin-top: 40px;
-      font-size: 0.75rem;
-      color: #484f58;
-    }
-  </style>
+  </script>
 </head>
-<body>
+<body class="bg-[#0d1117] text-[#e6edf3] min-h-screen p-6 md:p-10 font-sans antialiased">
 
-  <header>
-    <h1>YouTube 報告自動化ツール｜システム構成図</h1>
-    <p>毎朝10時に自動実行 → Googleスプレッドシートからデータ取得 → ダッシュボード生成 → Googleドライブへ自動アップロード</p>
-  </header>
+  <div class="max-w-3xl mx-auto">
 
-  <div class="diagram-container">
-    <img src="system-architecture.png" alt="システム構成図" />
+    <!-- ヘッダー -->
+    <header class="text-center mb-10">
+      <div class="inline-flex items-center gap-2 text-[#8b949e] text-xs border border-[#30363d] px-3 py-1.5 rounded-full mb-5">
+        <i data-lucide="git-merge" class="w-3.5 h-3.5"></i>
+        YouTube Dashboard Automation
+      </div>
+      <h1 class="text-2xl md:text-3xl font-bold text-[#f0f6fc] mb-3">
+        YouTube 報告自動化ツール<br class="md:hidden">｜システム構成図
+      </h1>
+      <p class="text-sm text-[#8b949e] leading-relaxed">
+        毎朝10時に自動実行 → Googleスプレッドシートからデータ取得<br>
+        → ダッシュボード生成 → Googleドライブへ自動アップロード
+      </p>
+    </header>
+
+    <!-- macOS 環境コンテナ -->
+    <div class="border border-dashed border-[#30363d] rounded-2xl p-5 md:p-7 relative mb-6">
+      <div class="absolute -top-3 left-5 flex items-center gap-1.5 bg-[#0d1117] px-2">
+        <i data-lucide="monitor" class="w-3.5 h-3.5 text-[#8b949e]"></i>
+        <span class="text-xs text-[#8b949e]">macOS 環境</span>
+      </div>
+
+      <!-- ① launchd -->
+      <div class="flex items-stretch gap-3 mb-1">
+        <div class="flex-1 bg-[#161b22] border border-[#30363d] rounded-xl p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-purple-950/60 border border-purple-800/40 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="clock" class="w-5 h-5 text-purple-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-0.5">
+              <span class="text-sm font-bold text-[#f0f6fc]">launchd スケジューラー</span>
+              <span class="text-[10px] bg-purple-950/60 text-purple-400 border border-purple-800/40 px-2 py-0.5 rounded-full whitespace-nowrap">毎朝 10:00 自動起動</span>
+            </div>
+            <div class="text-xs text-[#8b949e]">com.youtube-dashboard.plist</div>
+          </div>
+        </div>
+        <div class="w-[188px] flex-shrink-0 hidden md:block"></div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="flex ml-[26px] mb-1">
+        <div class="flex flex-col items-center">
+          <div class="w-px h-4 bg-[#484f58]"></div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-[#484f58] -mt-0.5"></i>
+        </div>
+      </div>
+
+      <!-- ② dashboard.py -->
+      <div class="flex items-stretch gap-3 mb-1">
+        <div class="flex-1 bg-[#161b22] border border-[#1f6feb]/40 rounded-xl p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-blue-950/60 border border-blue-800/40 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="cpu" class="w-5 h-5 text-blue-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-0.5">
+              <span class="text-sm font-bold text-[#f0f6fc]">dashboard.py</span>
+              <span class="text-[10px] bg-blue-950/60 text-blue-400 border border-blue-800/40 px-2 py-0.5 rounded-full whitespace-nowrap">エントリーポイント</span>
+            </div>
+            <div class="text-xs text-[#8b949e]">全体の司令塔 — 各モジュールを順番に呼び出す</div>
+          </div>
+        </div>
+        <div class="w-[188px] flex-shrink-0 hidden md:block"></div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="flex ml-[26px] mb-1">
+        <div class="flex flex-col items-center">
+          <div class="w-px h-4 bg-[#484f58]"></div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-[#484f58] -mt-0.5"></i>
+        </div>
+      </div>
+
+      <!-- ③ sheets.py ───→ Google Sheets -->
+      <div class="flex items-center gap-3 mb-1">
+        <div class="flex-1 bg-[#161b22] border border-[#30363d] rounded-xl p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="table-2" class="w-5 h-5 text-emerald-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-bold text-[#f0f6fc] mb-0.5">sheets.py</div>
+            <div class="text-xs text-[#8b949e]">gspread で「スケジュール」シートを取得。指数バックオフでリトライ</div>
+          </div>
+        </div>
+        <!-- コネクター -->
+        <div class="hidden md:flex items-center gap-1 flex-shrink-0">
+          <div class="w-6 h-px bg-[#30363d]"></div>
+          <div class="w-4 h-px border-t border-dashed border-[#30363d]"></div>
+          <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-emerald-700 flex-shrink-0"></i>
+        </div>
+        <!-- Google Sheets -->
+        <div class="hidden md:flex w-40 flex-shrink-0 bg-[#161b22] border border-emerald-900/40 rounded-xl p-3 items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-emerald-400 leading-tight">Google</div>
+            <div class="text-xs font-bold text-emerald-400 leading-tight">Sheets</div>
+            <div class="text-[9px] text-[#8b949e] mt-0.5">データソース</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="flex ml-[26px] mb-1">
+        <div class="flex flex-col items-center">
+          <div class="w-px h-4 bg-[#484f58]"></div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-[#484f58] -mt-0.5"></i>
+        </div>
+      </div>
+
+      <!-- ④ renderer.py -->
+      <div class="flex items-stretch gap-3 mb-1">
+        <div class="flex-1 bg-[#161b22] border border-[#30363d] rounded-xl p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-950/60 border border-indigo-800/40 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="layout-template" class="w-5 h-5 text-indigo-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-bold text-[#f0f6fc] mb-0.5">renderer.py</div>
+            <div class="text-xs text-[#8b949e]">Jinja2 で <code class="text-indigo-400 bg-indigo-950/40 px-1 rounded">dashboard.html.j2</code> にデータを注入 → HTMLを生成</div>
+          </div>
+        </div>
+        <div class="w-[188px] flex-shrink-0 hidden md:block"></div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="flex ml-[26px] mb-1">
+        <div class="flex flex-col items-center">
+          <div class="w-px h-4 bg-[#484f58]"></div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-[#484f58] -mt-0.5"></i>
+        </div>
+      </div>
+
+      <!-- ⑤ screenshot.py -->
+      <div class="flex items-stretch gap-3 mb-1">
+        <div class="flex-1 bg-[#161b22] border border-[#30363d] rounded-xl p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-950/60 border border-amber-800/40 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="camera" class="w-5 h-5 text-amber-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-bold text-[#f0f6fc] mb-0.5">screenshot.py</div>
+            <div class="text-xs text-[#8b949e]">Playwright（ヘッドレスChrome）で HTML をレンダリングし PNG+PDF を同時生成</div>
+          </div>
+        </div>
+        <div class="w-[188px] flex-shrink-0 hidden md:block"></div>
+      </div>
+
+      <!-- 矢印 → 出力ファイル -->
+      <div class="flex ml-[26px] mb-1">
+        <div class="flex flex-col items-center">
+          <div class="w-px h-4 bg-[#484f58]"></div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-[#484f58] -mt-0.5"></i>
+        </div>
+      </div>
+
+      <!-- 出力ファイル: PNG + PDF -->
+      <div class="flex items-stretch gap-3 mb-1">
+        <div class="flex-1 flex gap-3">
+          <div class="flex-1 bg-[#161b22] border border-[#30363d] rounded-xl p-3 flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="image" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-[#f0f6fc]">dashboard.png</div>
+              <div class="text-[10px] text-[#8b949e] mt-0.5">ダッシュボード画像</div>
+            </div>
+          </div>
+          <div class="flex-1 bg-[#161b22] border border-[#30363d] rounded-xl p-3 flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-red-950/60 border border-red-800/40 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="file-text" class="w-4 h-4 text-red-400"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-[#f0f6fc]">dashboard.pdf</div>
+              <div class="text-[10px] text-[#8b949e] mt-0.5">印刷対応版</div>
+            </div>
+          </div>
+        </div>
+        <div class="w-[188px] flex-shrink-0 hidden md:block"></div>
+      </div>
+
+      <!-- 矢印 -->
+      <div class="flex ml-[26px] mb-1">
+        <div class="flex flex-col items-center">
+          <div class="w-px h-4 bg-[#484f58]"></div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-[#484f58] -mt-0.5"></i>
+        </div>
+      </div>
+
+      <!-- ⑥ drive_upload.py ───→ Google Drive -->
+      <div class="flex items-center gap-3">
+        <div class="flex-1 bg-[#161b22] border border-[#30363d] rounded-xl p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="cloud-upload" class="w-5 h-5 text-cyan-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-bold text-[#f0f6fc] mb-0.5">drive_upload.py</div>
+            <div class="text-xs text-[#8b949e]">固定名で上書き保存（共有URLが変わらない）＋日付つき履歴を7日分保管</div>
+          </div>
+        </div>
+        <!-- コネクター -->
+        <div class="hidden md:flex items-center gap-1 flex-shrink-0">
+          <div class="w-6 h-px bg-[#30363d]"></div>
+          <div class="w-4 h-px border-t border-dashed border-[#30363d]"></div>
+          <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-cyan-700 flex-shrink-0"></i>
+        </div>
+        <!-- Google Drive -->
+        <div class="hidden md:flex w-40 flex-shrink-0 bg-[#161b22] border border-cyan-900/40 rounded-xl p-3 items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="hard-drive" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-cyan-400 leading-tight">Google</div>
+            <div class="text-xs font-bold text-cyan-400 leading-tight">Drive</div>
+            <div class="text-[9px] text-[#8b949e] mt-0.5">自動保存先</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /macOS環境コンテナ -->
+
+    <!-- 凡例 -->
+    <div class="flex flex-wrap justify-center gap-3 mb-8">
+      <div class="flex items-center gap-1.5 text-xs text-[#8b949e]">
+        <div class="w-2.5 h-2.5 rounded-sm bg-purple-800/60"></div>
+        スケジューラー
+      </div>
+      <div class="flex items-center gap-1.5 text-xs text-[#8b949e]">
+        <div class="w-2.5 h-2.5 rounded-sm bg-blue-800/60"></div>
+        オーケストレーター
+      </div>
+      <div class="flex items-center gap-1.5 text-xs text-[#8b949e]">
+        <div class="w-2.5 h-2.5 rounded-sm bg-emerald-800/60"></div>
+        データ取得
+      </div>
+      <div class="flex items-center gap-1.5 text-xs text-[#8b949e]">
+        <div class="w-2.5 h-2.5 rounded-sm bg-indigo-800/60"></div>
+        HTML生成
+      </div>
+      <div class="flex items-center gap-1.5 text-xs text-[#8b949e]">
+        <div class="w-2.5 h-2.5 rounded-sm bg-amber-800/60"></div>
+        画像化
+      </div>
+      <div class="flex items-center gap-1.5 text-xs text-[#8b949e]">
+        <div class="w-2.5 h-2.5 rounded-sm bg-cyan-800/60"></div>
+        クラウド保存
+      </div>
+    </div>
+
+    <!-- フッター -->
+    <footer class="text-center text-xs text-[#484f58]">
+      YouTube Dashboard Automation — Architecture Overview
+    </footer>
+
   </div>
 
-  <div class="download-bar">
-    <a class="btn btn-primary" href="system-architecture.png" download="youtube-dashboard-architecture.png">
-      ⬇ PNG をダウンロード
-    </a>
-    <a class="btn btn-secondary" href="index.html">
-      📊 ダッシュボードのモックを見る
-    </a>
-  </div>
-
-  <footer>YouTube Dashboard Automation — Architecture Overview</footer>
-
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube 報告自動ツール — システム構成図</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #0c0e17;
+      color: #cdd6f4;
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      padding: 36px 28px 48px;
+      min-height: 100vh;
+    }
+
+    /* ── Page title ── */
+    .page-title {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 36px;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Main diagram grid ──
+       Columns: [left-sections] [left-arrows] [center] [right-arrows] [right-sections]
+       Rows:    [top-sections]  [gap]         [bottom-sections]
+    */
+    .diagram {
+      display: grid;
+      grid-template-columns: 210px 80px 1fr 80px 240px;
+      grid-template-rows: auto 52px auto;
+      max-width: 940px;
+      margin: 0 auto;
+    }
+
+    /* Grid placement */
+    .s1          { grid-column: 1; grid-row: 1; }
+    .s2          { grid-column: 1; grid-row: 3; }
+    .arr-s1-s3   { grid-column: 2; grid-row: 1; }
+    .arr-s2-s3   { grid-column: 2; grid-row: 3; }
+    .s3          { grid-column: 3; grid-row: 1 / 4; }
+    .arr-s3-s4   { grid-column: 4; grid-row: 1; }
+    .arr-gap-r   { grid-column: 4; grid-row: 2 / 4; } /* empty spacer */
+    .s4          { grid-column: 5; grid-row: 1; }
+    .arr-s4-s5   { grid-column: 5; grid-row: 2; }
+    .s5          { grid-column: 5; grid-row: 3; }
+
+    /* ── Card base ── */
+    .card {
+      border-radius: 12px;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card + .card { margin-top: 0; }
+
+    .sec-label {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+      opacity: 0.65;
+    }
+
+    .sec-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Color themes ── */
+    /* Section 1: トリガー — cyan */
+    .card-cyan {
+      border: 1.5px solid #0891b2;
+      background: linear-gradient(145deg, #0d1d2e 0%, #091520 100%);
+    }
+    .card-cyan .sec-label  { color: #22d3ee; }
+    .card-cyan .sec-title  { color: #67e8f9; }
+
+    /* Section 2: ソース元 — green */
+    .card-green {
+      border: 1.5px solid #15803d;
+      background: linear-gradient(145deg, #0c1e12 0%, #080f09 100%);
+    }
+    .card-green .sec-label { color: #4ade80; }
+    .card-green .sec-title { color: #86efac; }
+
+    /* Section 3: 処理する場所 — amber */
+    .card-amber {
+      border: 1.5px solid #b45309;
+      background: linear-gradient(145deg, #1a1200 0%, #0f0a00 100%);
+    }
+    .card-amber .sec-label { color: #fbbf24; }
+    .card-amber .sec-title { color: #fcd34d; }
+
+    /* Section 4: 届ける先 — purple */
+    .card-purple {
+      border: 1.5px solid #6d28d9;
+      background: linear-gradient(145deg, #140c28 0%, #0d0820 100%);
+    }
+    .card-purple .sec-label { color: #a78bfa; }
+    .card-purple .sec-title { color: #c4b5fd; }
+
+    /* Section 5: クライアント — indigo */
+    .card-indigo {
+      border: 1.5px solid #4338ca;
+      background: linear-gradient(145deg, #10122a 0%, #0b0c20 100%);
+    }
+    .card-indigo .sec-label { color: #818cf8; }
+    .card-indigo .sec-title { color: #a5b4fc; }
+
+    /* ── Arrow cells ── */
+    .arr {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .arr-lbl {
+      font-size: 0.57rem;
+      color: #3d4f68;
+      text-align: center;
+      line-height: 1.45;
+    }
+    .arr-icon {
+      color: #2d3f55;
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+
+    /* ── Section 1 & 2 content ── */
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-bottom: 10px;
+      font-size: 0.78rem;
+    }
+    .info-icon { flex-shrink: 0; line-height: 1.5; }
+    .info-main {
+      display: block;
+      font-weight: 600;
+      color: #e2e8f0;
+      line-height: 1.4;
+    }
+    .info-sub {
+      display: block;
+      font-size: 0.67rem;
+      color: #4b5a6e;
+      line-height: 1.5;
+      margin-top: 2px;
+    }
+    .info-footer {
+      font-size: 0.63rem;
+      color: #3d4f68;
+      margin-top: auto;
+      padding-top: 10px;
+    }
+
+    /* ── Section 3: module cards ── */
+    .mod-stack { display: flex; flex-direction: column; gap: 0; }
+
+    .mod-card {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      padding: 10px 13px;
+      border-left: 3px solid transparent;
+    }
+    .mod-arrow {
+      text-align: center;
+      color: #262f3e;
+      font-size: 0.75rem;
+      padding: 4px 0;
+    }
+    .mod-name {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: #dde4f0;
+      margin-bottom: 3px;
+    }
+    .mod-desc {
+      font-size: 0.68rem;
+      color: #4b5a6e;
+      line-height: 1.45;
+    }
+    /* Module accent colors */
+    .mod-emerald  { border-left-color: #059669; }
+    .mod-indigo   { border-left-color: #4f46e5; }
+    .mod-amber    { border-left-color: #d97706; }
+    .mod-blue     { border-left-color: #2563eb; }
+
+    /* ── Section 4: file tree ── */
+    .file-tree {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+      font-size: 0.7rem;
+      line-height: 1.75;
+      color: #4b5a6e;
+    }
+    .ft-folder { color: #ca8a04; }
+    .ft-file   { color: #e2e8f0; }
+    .ft-badge {
+      font-size: 0.58rem;
+      background: rgba(109, 40, 217, 0.2);
+      color: #a78bfa;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: 4px;
+    }
+    .ft-history { color: #2d3a4e; font-size: 0.65rem; }
+    .ft-note    { color: #1d2535; font-size: 0.62rem; }
+    .ft-remark  {
+      font-size: 0.63rem;
+      color: #3d4f68;
+      margin-top: 10px;
+    }
+
+    /* ── Section 5: client features ── */
+    .client-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-bottom: 12px;
+      font-size: 0.78rem;
+    }
+    .client-feat {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.73rem;
+      color: #64748b;
+      margin-bottom: 7px;
+    }
+    .feat-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .badge-png { background: rgba(5,150,105,0.2);  color: #34d399; }
+    .badge-pdf { background: rgba(79,70,229,0.2);  color: #818cf8; }
+
+    /* ── Pipeline bar ── */
+    .pipeline-bar {
+      max-width: 940px;
+      margin: 22px auto 0;
+      background: #13172a;
+      border: 1px solid #1e2540;
+      border-radius: 8px;
+      padding: 11px 22px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .pip-mod {
+      font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+    .pip-sep { color: #283040; font-size: 0.8rem; }
+    .pip-tag {
+      margin-left: auto;
+      font-size: 0.62rem;
+      color: #2d3a50;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="page-title">YouTube 報告自動化ツール&emsp;システム構成図</h1>
+
+  <div class="diagram">
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- SECTION 1: トリガー                         -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="s1 card card-cyan">
+      <div class="sec-label">SECTION 1</div>
+      <div class="sec-title">① トリガー</div>
+
+      <div class="info-row">
+        <span class="info-icon">🕙</span>
+        <div>
+          <span class="info-main">毎朝 10:00</span>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <span class="info-icon">🍎</span>
+        <div>
+          <span class="info-main">macOS launchd</span>
+        </div>
+      </div>
+
+      <div class="info-footer">💤 スリープ中でも起動時に実行</div>
+    </div>
+
+    <!-- Arrow ① → ③ -->
+    <div class="arr-s1-s3 arr">
+      <div class="arr-lbl">自動起動</div>
+      <div class="arr-icon">→</div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- SECTION 3: 処理する場所                     -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="s3 card card-amber">
+      <div class="sec-label">SECTION 3</div>
+      <div class="sec-title">③ 処理する場所 (Mac)</div>
+
+      <div class="mod-stack">
+        <div class="mod-card mod-emerald">
+          <div class="mod-name">sheets.py</div>
+          <div class="mod-desc">スプレッドシートからデータ取得<br>429エラー時は自動リトライ</div>
+        </div>
+        <div class="mod-arrow">↓</div>
+        <div class="mod-card mod-indigo">
+          <div class="mod-name">renderer.py</div>
+          <div class="mod-desc">Jinja2でHTMLを生成<br>ステータス色分け・緊急ハイライト</div>
+        </div>
+        <div class="mod-arrow">↓</div>
+        <div class="mod-card mod-amber">
+          <div class="mod-name">screenshot.py</div>
+          <div class="mod-desc">Playwrightでスクリーンショット<br>PNG + PDF を同時生成</div>
+        </div>
+        <div class="mod-arrow">↓</div>
+        <div class="mod-card mod-blue">
+          <div class="mod-name">dashboard.py</div>
+          <div class="mod-desc">全体を統括するオーケストレーター</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow ③ → ④ -->
+    <div class="arr-s3-s4 arr">
+      <div class="arr-lbl">PNG + PDF<br>自動アップロード</div>
+      <div class="arr-icon">→</div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- SECTION 4: 届ける先                         -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="s4 card card-purple">
+      <div class="sec-label">SECTION 4</div>
+      <div class="sec-title">④ 届ける先</div>
+
+      <div class="file-tree">
+        <div><span class="ft-folder">▶</span> Googleドライブ/</div>
+        <div style="padding-left:14px">
+          ├ <span class="ft-file">dashboard.png</span><span class="ft-badge">固定URL</span>
+        </div>
+        <div style="padding-left:14px">
+          ├ <span class="ft-file">dashboard.pdf</span><span class="ft-badge">固定URL</span>
+        </div>
+        <div style="padding-left:14px">
+          └ <span class="ft-folder">▶</span> history/
+        </div>
+        <div style="padding-left:28px" class="ft-history">├ dashboard_2026-04-06.png</div>
+        <div style="padding-left:28px" class="ft-history">├ dashboard_2026-04-07.png</div>
+        <div style="padding-left:28px" class="ft-history">└ dashboard_2026-04-08.png</div>
+        <div style="padding-left:28px" class="ft-note">(7日分のみ保持・自動削除)</div>
+      </div>
+      <div class="ft-remark">※ URLは変わらない</div>
+    </div>
+
+    <!-- Arrow ④ → ⑤ (vertical) -->
+    <div class="arr-s4-s5 arr">
+      <div class="arr-lbl">URLを共有<br>(一度だけ)</div>
+      <div class="arr-icon">↓</div>
+    </div>
+
+    <!-- Arrow ② → ③ -->
+    <div class="arr-s2-s3 arr">
+      <div class="arr-lbl">Sheets API<br>指数バックオフ付き</div>
+      <div class="arr-icon">→</div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- SECTION 2: ソース元                         -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="s2 card card-green">
+      <div class="sec-label">SECTION 2</div>
+      <div class="sec-title">② ソース元</div>
+
+      <div class="info-row">
+        <span class="info-icon">📊</span>
+        <div>
+          <span class="info-main">Googleスプレッドシート</span>
+          <span class="info-sub">動画タイトル / 公開日時<br>編集者 / ステータス / 完了日</span>
+        </div>
+      </div>
+
+      <div class="info-footer">🛡 認証: 環境変数 (GOOGLE_CREDENTIALS)</div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- SECTION 5: クライアント                     -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="s5 card card-indigo">
+      <div class="sec-label">SECTION 5</div>
+      <div class="sec-title">⑤ クライアント</div>
+
+      <div class="client-main">
+        <span style="line-height:1.5">🔗</span>
+        <div>
+          <span class="info-main">URLを開くだけ</span>
+          <span class="info-sub">毎朝最新版を確認</span>
+        </div>
+      </div>
+
+      <div class="client-feat">
+        <span class="feat-badge badge-png">PNG</span>
+        <span>画像として共有可</span>
+      </div>
+      <div class="client-feat">
+        <span class="feat-badge badge-pdf">PDF</span>
+        <span>印刷・テキスト検索可</span>
+      </div>
+    </div>
+
+  </div><!-- /diagram -->
+
+  <!-- ── Pipeline bar ── -->
+  <div class="pipeline-bar">
+    <span class="pip-mod">dashboard.py</span>
+    <span class="pip-sep">→</span>
+    <span class="pip-mod">sheets.py</span>
+    <span class="pip-sep">→</span>
+    <span class="pip-mod">renderer.py</span>
+    <span class="pip-sep">→</span>
+    <span class="pip-mod">screenshot.py</span>
+    <span class="pip-sep">→</span>
+    <span class="pip-mod">drive_upload.py</span>
+    <span class="pip-tag">モジュール構成</span>
+  </div>
+
+</body>
+</html>
