@@ -18,12 +18,16 @@ logger = logging.getLogger(__name__)
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 
-def render_dashboard(videos: list[dict[str, Any]]) -> str:
+def render_dashboard(
+    videos: list[dict[str, Any]],
+    next_actions: list[dict[str, str]] | None = None,
+) -> str:
     """
     動画データリストを受け取りダッシュボードHTMLを返す。
 
     Args:
-        videos: sheets.get_sheet_data() の戻り値
+        videos      : sheets.get_sheet_data() の戻り値
+        next_actions: ai_advisor.generate_next_actions() の戻り値（省略可）
 
     Returns:
         レンダリングされたHTML文字列
@@ -42,6 +46,7 @@ def render_dashboard(videos: list[dict[str, Any]]) -> str:
         summary_display=SUMMARY_DISPLAY,
         generated_at=datetime.now().strftime("%Y年%-m月%-d日 %H:%M"),
         statuses=[s.value for s in VideoStatus],
+        next_actions=next_actions or [],
     )
 
     logger.info("HTMLレンダリング完了")

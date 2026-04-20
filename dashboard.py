@@ -28,6 +28,7 @@ from renderer import render_dashboard
 from screenshot import take_screenshot_from_html, _setup_logging
 from drive_upload import upload_dashboard
 from chatwork import send_report_image, build_daily_message
+from ai_advisor import generate_next_actions
 
 logger = logging.getLogger(__name__)
 
@@ -61,19 +62,29 @@ def main() -> None:
     if not videos:
         logger.warning("データが0件でした。スプレッドシートの内容を確認してください。")
 
-    # 2. HTMLレンダリング
+    # 2. AI Next Actions 生成（GEMINI_API_KEY が設定されている場合のみ）
+    next_actions = []
+    if os.getenv("GEMINI_API_KEY"):
+        try:
+            next_actions = generate_next_actions(videos)
+        except Exception as e:
+            logger.warning(f"Next Actions生成をスキップしました: {e}")
+    else:
+        logger.info("GEMINI_API_KEY が未設定のためNext Actions生成をスキップしました")
+
+    # 3. HTMLレンダリング
     try:
-        html = render_dashboard(videos)
+        html = render_dashboard(videos, next_actions=next_actions)
     except Exception as e:
         logger.exception(f"HTMLレンダリング失敗: {e}")
         sys.exit(1)
 
-    # 3. レンダリング済みHTMLを一時保存
+    # 4. レンダリング済みHTMLを一時保存
     rendered_html = Path(__file__).parent / "output" / "dashboard_rendered.html"
     rendered_html.parent.mkdir(exist_ok=True)
     rendered_html.write_text(html, encoding="utf-8")
 
-    # 4. PNG + PDF を同時出力（ブラウザ起動1回で両方生成）
+    # 5. PNG + PDF を同時出力（ブラウザ起動1回で両方生成）
     output_dir = Path(__file__).parent / "output"
     output_png = output_dir / "dashboard.png"
     output_pdf = output_dir / "dashboard.pdf"
@@ -87,7 +98,7 @@ def main() -> None:
 
     logger.info(f"ダッシュボード生成完了: PNG={output_png} / PDF={output_pdf}")
 
-    # 5. Googleドライブにアップロード（DRIVE_FOLDER_ID が設定されている場合のみ）
+    # 6. Googleドライブにアップロード（DRIVE_FOLDER_ID が設定されている場合のみ）
     drive_folder_id = os.getenv("DRIVE_FOLDER_ID")
     if drive_folder_id:
         try:
@@ -97,7 +108,7 @@ def main() -> None:
     else:
         logger.info("DRIVE_FOLDER_ID が未設定のためアップロードをスキップしました")
 
-    # 6. Chatwork に日報画像を送信（CHATWORK_API_TOKEN が設定されている場合のみ）
+    # 7. Chatwork に日報画像を送信（CHATWORK_API_TOKEN が設定されている場合のみ）
     chatwork_token = os.getenv("CHATWORK_API_TOKEN")
     if chatwork_token:
         try:

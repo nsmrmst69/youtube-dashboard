@@ -76,6 +76,47 @@
     {% endfor %}
   </div>
 
+  {# Next Actions（AI生成） #}
+  {% if next_actions %}
+  <div class="mb-8 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800 flex items-center gap-3">
+      <span class="text-lg">✦</span>
+      <h2 class="text-base font-semibold text-gray-100">Today's Next Actions</h2>
+      <span class="text-xs text-gray-500 ml-auto">AI生成（Gemini）</span>
+    </div>
+    <div class="divide-y divide-gray-800">
+      {% for item in next_actions %}
+        {% if item.priority == 'high' %}
+          {% set bg = 'bg-red-950/40' %}
+          {% set badge = 'bg-red-900/60 text-red-300 border-red-700/40' %}
+          {% set dot = 'bg-red-400' %}
+          {% set label = '優先度：高' %}
+        {% elif item.priority == 'medium' %}
+          {% set bg = 'bg-orange-950/30' %}
+          {% set badge = 'bg-orange-900/60 text-orange-300 border-orange-700/40' %}
+          {% set dot = 'bg-orange-400' %}
+          {% set label = '優先度：中' %}
+        {% else %}
+          {% set bg = 'bg-gray-900' %}
+          {% set badge = 'bg-gray-800 text-gray-400 border-gray-700' %}
+          {% set dot = 'bg-gray-400' %}
+          {% set label = '優先度：低' %}
+        {% endif %}
+      <div class="px-6 py-4 {{ bg }} flex items-start gap-4">
+        <span class="mt-0.5 w-2 h-2 rounded-full {{ dot }} flex-shrink-0 mt-2"></span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-sm font-semibold text-gray-100">{{ item.action }}</span>
+            <span class="text-xs px-2 py-0.5 rounded border {{ badge }}">{{ label }}</span>
+          </div>
+          <p class="text-xs text-gray-400">{{ item.reason }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {# スケジュールテーブル #}
   <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-800">
