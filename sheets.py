@@ -15,7 +15,10 @@ import gspread
 from google.oauth2.service_account import Credentials
 import json
 
-from config import normalize_status
+from datetime import date, datetime, timedelta
+import re
+
+from config import normalize_status, REPORT_DAYS
 
 # 指数バックオフの設定（Google 公式推奨値）
 _MAX_RETRIES = 5
@@ -25,14 +28,17 @@ logger = logging.getLogger(__name__)
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 
-# スプレッドシートの列名とPython変数名のマッピング
-COLUMN_MAP = {
-    "日時":                       "publish_date",
-    "動画タイトル":                 "title",
-    "外注編集者への編集依頼日時":     "request_date",
-    "外注編集者名":                 "editor",
-    "状況ステータス":               "status",
-    "編集完了日":                   "complete_date",
+# 列インデックス（0始まり）とPython変数名のマッピング
+# 列名が重複しているためインデックスで直接指定する
+# A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10 ...
+COLUMN_INDEX_MAP = {
+    0:  "publish_date",   # A列: 日時
+    3:  "title",          # D列: 動画素材タイトル（メモ）
+    5:  "editor",         # F列: 編集者
+    7:  "request_date",   # H列: 依頼日
+    8:  "delivery_due",   # I列: 納品予定日
+    9:  "complete_date",  # J列: 納品日
+    10: "status",         # K列: ステータス
 }
 
 
@@ -80,36 +86,47 @@ def get_sheet_data(spreadsheet_id: str, sheet_name: str) -> list[dict[str, Any]]
     except gspread.exceptions.WorksheetNotFound:
         raise ValueError(f"シートが見つかりません: {sheet_name}")
 
-    records = _get_records_with_backoff(sheet, sheet_name)
-    logger.info(f"{len(records)} 行取得（シート: {sheet_name}）")
+    all_values = _get_values_with_backoff(sheet, sheet_name)
+    logger.info(f"{len(all_values)} 行取得（シート: {sheet_name}）")
+
+    # 1行目・2行目はヘッダーなのでスキップ（3行目以降がデータ）
+    data_rows = all_values[2:] if len(all_values) > 2 else []
+
+    # 今日〜REPORT_DAYS日後の範囲でフィルタリング
+    today = date.today()
+    date_to = today + timedelta(days=REPORT_DAYS)
+    logger.info(f"表示期間: {today} 〜 {date_to}（{REPORT_DAYS}日分）")
 
     result = []
-    for i, row in enumerate(records, start=2):
-        if not any(str(v).strip() for v in row.values()):
+    for i, row in enumerate(data_rows, start=3):
+        if not any(str(v).strip() for v in row):
             continue
 
-        normalized = _normalize_row(row, row_num=i)
-        if normalized:
+        normalized = _normalize_row_by_index(row, row_num=i)
+        if not normalized:
+            continue
+
+        # 日付フィルタリング（パースできない行は含める）
+        parsed_date = _parse_date(normalized.get("publish_date", ""))
+        if parsed_date is None or (today <= parsed_date <= date_to):
             result.append(normalized)
 
-    logger.info(f"有効データ: {len(result)} 件")
+    logger.info(f"有効データ: {len(result)} 件（{today} 〜 {date_to}）")
     return result
 
 
-def _get_records_with_backoff(sheet, sheet_name: str) -> list[dict]:
+def _get_values_with_backoff(sheet, sheet_name: str) -> list[list]:
     """
-    Google Sheets API からデータを取得する。429/5xx エラー時に指数バックオフでリトライ。
-
-    アルゴリズム（Google 公式推奨）:
-        wait = min(2^n + random(0, 1000ms), MAX_BACKOFF_SEC)
-        n は失敗するたびに +1
+    Google Sheets API から全データを2次元リストで取得する。
+    列名の重複を避けるため get_all_records の代わりに get_all_values を使用。
+    429/5xx エラー時に指数バックオフでリトライ。
 
     Raises:
         gspread.exceptions.APIError: MAX_RETRIES 回失敗した場合
     """
     for attempt in range(_MAX_RETRIES):
         try:
-            return sheet.get_all_records()
+            return sheet.get_all_values()
         except gspread.exceptions.APIError as e:
             status_code = e.response.status_code if hasattr(e, "response") else 0
             is_retryable = status_code in (429, 500, 502, 503, 504)
@@ -131,12 +148,32 @@ def _get_records_with_backoff(sheet, sheet_name: str) -> list[dict]:
     return []
 
 
-def _normalize_row(row: dict, row_num: int) -> dict[str, Any] | None:
-    """1行のデータをバリデーション・正規化して返す。問題行はNoneを返す。"""
+def _parse_date(raw: str) -> date | None:
+    """
+    日付文字列をパースして date オブジェクトを返す。
+    対応フォーマット: 4/15/水曜日, 4/15(水), 4/15, 2026/4/15, 2026-04-15
+    """
+    cleaned = re.sub(r'/[月火水木金土日]曜日$', '', raw.strip())
+    cleaned = cleaned.split("(")[0].split(" ")[0].strip()
+
+    formats = ["%Y/%m/%d", "%Y-%m-%d", "%m/%d", "%Y年%m月%d日"]
+    for fmt in formats:
+        try:
+            parsed = datetime.strptime(cleaned, fmt)
+            if parsed.year == 1900:
+                parsed = parsed.replace(year=date.today().year)
+            return parsed.date()
+        except ValueError:
+            continue
+    return None
+
+
+def _normalize_row_by_index(row: list, row_num: int) -> dict[str, Any] | None:
+    """1行のデータ（リスト）をインデックスで取得してバリデーション・正規化して返す。"""
     normalized: dict[str, Any] = {}
 
-    for sheet_col, python_key in COLUMN_MAP.items():
-        value = str(row.get(sheet_col, "")).strip()
+    for col_idx, python_key in COLUMN_INDEX_MAP.items():
+        value = str(row[col_idx]).strip() if col_idx < len(row) else ""
         normalized[python_key] = value if value else "—"
 
     # ステータスのバリデーション

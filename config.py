@@ -7,14 +7,14 @@ from enum import Enum
 
 class VideoStatus(str, Enum):
     MATERIAL_CHECK = "素材確認中"
-    TO_REQUEST     = "依頼前"
+    TO_REQUEST     = "依頼する"
     REQUESTED      = "依頼中"
     EDITING        = "編集中"
-    DIRECTOR_CHECK = "ディレクター確認中"
-    CLIENT_CHECK   = "クライアント確認中"
+    DIRECTOR_CHECK = "確認中"
+    CLIENT_CHECK   = "先方確認中"
     REVISION       = "修正中"
-    YOUTUBE_UPLOAD = "YouTube公開作業"
-    DONE           = "完了"
+    PUBLISH        = "公開作業"
+    DONE           = "済"
 
 
 def normalize_status(raw: str) -> VideoStatus:
@@ -37,12 +37,15 @@ def normalize_status(raw: str) -> VideoStatus:
 
 # サマリーカードに表示するステータスと色の定義
 SUMMARY_DISPLAY = [
-    {"status": VideoStatus.DONE,           "color": "text-green-400"},
     {"status": VideoStatus.EDITING,        "color": "text-blue-400"},
     {"status": VideoStatus.CLIENT_CHECK,   "color": "text-orange-400"},
     {"status": VideoStatus.REVISION,       "color": "text-red-400"},
-    {"status": VideoStatus.YOUTUBE_UPLOAD, "color": "text-purple-400"},
+    {"status": VideoStatus.PUBLISH,        "color": "text-purple-400"},
+    {"status": VideoStatus.DONE,           "color": "text-green-400"},
 ]
 
 # 公開日が何日以内なら緊急ハイライトを付けるか
 URGENT_DAYS_THRESHOLD = 3
+
+# 日報に表示する日数（今日から何日分を表示するか）
+REPORT_DAYS = 10

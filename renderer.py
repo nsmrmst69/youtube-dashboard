@@ -81,7 +81,17 @@ def _mark_urgent(videos: list[dict]) -> list[dict]:
 
 
 def _try_parse_date(raw: str) -> date | None:
-    """日付文字列をパースする。失敗したらNoneを返す。"""
+    """
+    日付文字列をパースする。失敗したらNoneを返す。
+    対応フォーマット:
+        4/15/水曜日, 4/15(水), 4/15, 2026/4/15, 2026-04-15, 2026年4月15日
+    """
+    import re
+    # "4/15/水曜日" → "4/15" のように末尾の曜日部分を除去
+    cleaned = re.sub(r'/[月火水木金土日]曜日$', '', raw.strip())
+    # "(水)" のような括弧内の曜日を除去
+    cleaned = cleaned.split("(")[0].split(" ")[0].strip()
+
     formats = [
         "%Y/%m/%d",
         "%Y-%m-%d",
@@ -90,7 +100,7 @@ def _try_parse_date(raw: str) -> date | None:
     ]
     for fmt in formats:
         try:
-            parsed = datetime.strptime(raw.split(" ")[0].split("(")[0].strip(), fmt)
+            parsed = datetime.strptime(cleaned, fmt)
             if parsed.year == 1900:
                 parsed = parsed.replace(year=date.today().year)
             return parsed.date()

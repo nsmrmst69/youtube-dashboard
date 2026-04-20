@@ -48,15 +48,15 @@
     <p class="text-gray-500 text-xs mb-3 font-medium">制作フロー</p>
     <div class="flex items-center gap-1 flex-wrap">
       {% set badge_map = {
-        "素材確認中":        "darkgray",
-        "依頼前":            "gray",
-        "依頼中":            "teal",
-        "編集中":            "blue",
-        "ディレクター確認中": "yellow",
-        "クライアント確認中": "orange",
-        "修正中":            "red",
-        "YouTube公開作業":   "purple",
-        "完了":              "green"
+        "素材確認中":  "darkgray",
+        "依頼する":    "gray",
+        "依頼中":      "teal",
+        "編集中":      "blue",
+        "確認中":      "yellow",
+        "先方確認中":  "orange",
+        "修正中":      "red",
+        "公開作業":    "purple",
+        "済":          "green"
       } %}
       {% for s in statuses %}
         {% set color = badge_map.get(s, "gray") %}
@@ -85,12 +85,13 @@
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-gray-800 text-gray-400 text-xs font-semibold">
-            <th class="px-5 py-3 text-left">公開日時</th>
-            <th class="px-5 py-3 text-left">動画タイトル</th>
-            <th class="px-5 py-3 text-left">依頼日時</th>
+            <th class="px-5 py-3 text-left">公開日</th>
+            <th class="px-5 py-3 text-left">動画素材タイトル</th>
             <th class="px-5 py-3 text-left">編集者</th>
+            <th class="px-5 py-3 text-left">依頼日</th>
+            <th class="px-5 py-3 text-left">納品予定日</th>
             <th class="px-5 py-3 text-left">ステータス</th>
-            <th class="px-5 py-3 text-left">編集完了日</th>
+            <th class="px-5 py-3 text-left">納品日</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -113,9 +114,10 @@
               {% endif %}
             </td>
 
-            <td class="px-5 py-4 font-medium text-white">{{ video.title }}</td>
+            <td class="px-5 py-4 font-medium text-white max-w-xs truncate" title="{{ video.title }}">{{ video.title }}</td>
+            <td class="px-5 py-4 text-gray-300 whitespace-nowrap">{{ video.editor }}</td>
             <td class="px-5 py-4 text-gray-400 whitespace-nowrap">{{ video.request_date }}</td>
-            <td class="px-5 py-4 text-gray-300">{{ video.editor }}</td>
+            <td class="px-5 py-4 text-gray-400 whitespace-nowrap">{{ video.delivery_due }}</td>
 
             {# ステータスバッジ #}
             <td class="px-5 py-4">
@@ -125,7 +127,7 @@
               </span>
             </td>
 
-            <td class="px-5 py-4 text-gray-400">{{ video.complete_date }}</td>
+            <td class="px-5 py-4 text-gray-400 whitespace-nowrap">{{ video.complete_date }}</td>
           </tr>
           {% endfor %}
         </tbody>

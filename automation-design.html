@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube運営 業務自動化 全体設計図</title>
+<style>
+  :root {
+    --sheets-color: #0f9d58;
+    --sheets-light: #e6f4ea;
+    --chatwork-color: #e8432d;
+    --chatwork-light: #fdecea;
+    --gas-color: #4285f4;
+    --gas-light: #e8f0fe;
+    --client-color: #ff6d00;
+    --client-light: #fff3e0;
+    --editor-color: #7c4dff;
+    --editor-light: #ede7f6;
+    --colleague-color: #00897b;
+    --colleague-light: #e0f2f1;
+    --vimeo-color: #1ab7ea;
+    --vimeo-light: #e3f6fd;
+    --wp-color: #21759b;
+    --wp-light: #e3f0f7;
+    --trigger-color: #f9a825;
+    --trigger-light: #fffde7;
+    --arrow-color: #546e7a;
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text: #1a202c;
+    --text-muted: #718096;
+    --border: #e2e8f0;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 32px 24px;
+    line-height: 1.6;
+  }
+
+  /* ── ページヘッダー ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .page-header p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .page-header .badge {
+    display: inline-block;
+    background: var(--gas-color);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── セクションタイトル ── */
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── システムレイヤー ── */
+  .systems-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .system-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border-top: 4px solid;
+    text-align: center;
+  }
+  .system-card .icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .system-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .system-card p {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .system-card.sheets { border-color: var(--sheets-color); }
+  .system-card.chatwork { border-color: var(--chatwork-color); }
+  .system-card.gas { border-color: var(--gas-color); }
+  .system-card.vimeo-wp { border-color: var(--vimeo-color); }
+
+  /* ── スプレッドシート構造 ── */
+  .sheet-overview {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 48px;
+    border: 1px solid var(--border);
+  }
+  .sheet-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+  }
+  .sheet-tab {
+    padding: 8px 20px;
+    border-radius: 8px 8px 0 0;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: default;
+  }
+  .sheet-tab.active-tab {
+    background: var(--sheets-color);
+    color: white;
+  }
+  .sheet-tab.inactive-tab {
+    background: #f0f0f0;
+    color: var(--text-muted);
+  }
+  .sheet-columns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .col-group {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+  .col-group-header {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 12px;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+  .col-group-body {
+    display: flex;
+    gap: 0;
+  }
+  .col-item {
+    padding: 8px 10px;
+    font-size: 11px;
+    text-align: center;
+    border-right: 1px solid rgba(0,0,0,0.08);
+    min-width: 70px;
+    background: white;
+  }
+  .col-item:last-child { border-right: none; }
+  .col-item .col-letter {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+  .col-item .col-name {
+    display: block;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .col-item.trigger-col {
+    background: var(--trigger-light);
+    position: relative;
+  }
+  .col-item.trigger-col::after {
+    content: '⚡';
+    display: block;
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  /* グループカラー */
+  .g-base { border-color: #94a3b8; }
+  .g-base .col-group-header { background: #94a3b8; color: white; }
+  .g-event { border-color: #60a5fa; }
+  .g-event .col-group-header { background: #60a5fa; color: white; }
+  .g-yt { border-color: #ff4444; }
+  .g-yt .col-group-header { background: #ff4444; color: white; }
+  .g-outsource { border-color: #f59e0b; }
+  .g-outsource .col-group-header { background: #f59e0b; color: white; }
+  .g-publish { border-color: #10b981; }
+  .g-publish .col-group-header { background: #10b981; color: white; }
+  .g-sns { border-color: #8b5cf6; }
+  .g-sns .col-group-header { background: #8b5cf6; color: white; }
+  .g-salon { border-color: #0ea5e9; }
+  .g-salon .col-group-header { background: #0ea5e9; color: white; }
+
+  /* ── ステータスフロー ── */
+  .status-flow-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 48px;
+    border: 1px solid var(--border);
+  }
+  .status-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .status-pill {
+    padding: 8px 16px;
+    border-radius: 24px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    position: relative;
+    border: 2px solid;
+  }
+  .status-arrow {
+    font-size: 18px;
+    color: var(--arrow-color);
+    font-weight: 700;
+    margin: 0 2px;
+  }
+  .s-confirm { background: #fff9c4; border-color: #f9a825; color: #7a6000; }
+  .s-request-plan { background: #fce4ec; border-color: #e91e63; color: #880e4f; }
+  .s-requesting { background: #f3e5f5; border-color: #9c27b0; color: #4a148c; }
+  .s-editing { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
+  .s-checking { background: #e8f5e9; border-color: #4caf50; color: #1b5e20; }
+  .s-client-check { background: #fff3e0; border-color: #ff9800; color: #e65100; }
+  .s-fixing { background: #fbe9e7; border-color: #ff5722; color: #bf360c; }
+  .s-publish { background: #e8eaf6; border-color: #3f51b5; color: #1a237e; }
+  .s-done { background: #e0f2f1; border-color: #009688; color: #004d40; }
+  .status-pill.has-trigger {
+    box-shadow: 0 0 0 3px rgba(249,168,37,0.3);
+  }
+  .status-pill.has-trigger::after {
+    content: '⚡ 自動';
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--trigger-color);
+    white-space: nowrap;
+    background: var(--trigger-light);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--trigger-color);
+  }
+
+  /* ── Chatworkチャンネル ── */
+  .chatwork-channels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .cw-channel {
+    border-radius: 16px;
+    padding: 20px;
+    border: 2px solid;
+  }
+  .cw-channel h4 {
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .cw-channel .cw-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .cw-channel ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cw-channel ul li {
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.4;
+  }
+  .cw-channel ul li .auto-badge {
+    display: inline-block;
+    background: var(--gas-color);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .cw-channel ul li .manual-badge {
+    display: inline-block;
+    background: #9e9e9e;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .cw-client { border-color: var(--client-color); background: var(--client-light); }
+  .cw-client h4 { color: var(--client-color); }
+  .cw-client ul li { background: rgba(255,109,0,0.07); }
+  .cw-editor { border-color: var(--editor-color); background: var(--editor-light); }
+  .cw-editor h4 { color: var(--editor-color); }
+  .cw-editor ul li { background: rgba(124,77,255,0.07); }
+  .cw-colleague { border-color: var(--colleague-color); background: var(--colleague-light); }
+  .cw-colleague h4 { color: var(--colleague-color); }
+  .cw-colleague ul li { background: rgba(0,137,123,0.07); }
+
+  /* ── トリガー別フロー ── */
+  .triggers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  .trigger-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .trigger-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+  }
+  .tc-1::before { background: linear-gradient(90deg, var(--client-color), #ff9800); }
+  .tc-2::before { background: linear-gradient(90deg, var(--editor-color), #e040fb); }
+  .tc-3::before { background: linear-gradient(90deg, var(--client-color), #ff4444); }
+  .tc-4::before { background: linear-gradient(90deg, #10b981, #3f51b5); }
+  .tc-5::before { background: linear-gradient(90deg, var(--vimeo-color), var(--wp-color)); }
+
+  .trigger-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 12px;
+  }
+  .tc-1 .trigger-number { background: var(--client-color); }
+  .tc-2 .trigger-number { background: var(--editor-color); }
+  .tc-3 .trigger-number { background: #e53935; }
+  .tc-4 .trigger-number { background: #10b981; }
+  .tc-5 .trigger-number { background: var(--vimeo-color); }
+
+  .trigger-card h3 {
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .trigger-card .trigger-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .flow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .flow-step-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .flow-step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    border: 2px solid;
+  }
+  .flow-step-connector {
+    width: 2px;
+    height: 20px;
+    background: var(--border);
+    margin: 2px 0;
+  }
+  .flow-step-content {
+    padding-bottom: 16px;
+    flex: 1;
+  }
+  .flow-step-content .step-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 3px;
+  }
+  .flow-step-content .step-desc {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .flow-step-content .step-data {
+    margin-top: 6px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    border-left: 3px solid var(--border);
+  }
+
+  /* ステップタイプ別色 */
+  .step-sheets .flow-step-dot { background: var(--sheets-light); border-color: var(--sheets-color); color: var(--sheets-color); }
+  .step-sheets .step-label { color: var(--sheets-color); }
+  .step-gas .flow-step-dot { background: var(--gas-light); border-color: var(--gas-color); color: var(--gas-color); }
+  .step-gas .step-label { color: var(--gas-color); }
+  .step-chatwork .flow-step-dot { background: var(--chatwork-light); border-color: var(--chatwork-color); color: var(--chatwork-color); }
+  .step-chatwork .step-label { color: var(--chatwork-color); }
+  .step-client .flow-step-dot { background: var(--client-light); border-color: var(--client-color); color: var(--client-color); }
+  .step-client .step-label { color: var(--client-color); }
+  .step-editor .flow-step-dot { background: var(--editor-light); border-color: var(--editor-color); color: var(--editor-color); }
+  .step-editor .step-label { color: var(--editor-color); }
+  .step-colleague .flow-step-dot { background: var(--colleague-light); border-color: var(--colleague-color); color: var(--colleague-color); }
+  .step-colleague .step-label { color: var(--colleague-color); }
+  .step-vimeo .flow-step-dot { background: var(--vimeo-light); border-color: var(--vimeo-color); color: var(--vimeo-color); }
+  .step-vimeo .step-label { color: var(--vimeo-color); }
+
+  /* ── 削減効果サマリー ── */
+  .impact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .impact-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .impact-card .impact-icon { font-size: 28px; margin-bottom: 8px; }
+  .impact-card .impact-num {
+    font-size: 32px;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--gas-color), var(--sheets-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .impact-card .impact-label {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .impact-card .impact-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ── 実装ロードマップ ── */
+  .roadmap {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .roadmap-phases {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .phase {
+    border-radius: 12px;
+    padding: 18px;
+    border: 2px solid;
+  }
+  .phase-1 { border-color: var(--sheets-color); background: var(--sheets-light); }
+  .phase-2 { border-color: var(--gas-color); background: var(--gas-light); }
+  .phase-3 { border-color: var(--editor-color); background: var(--editor-light); }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .phase-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 10px;
+    color: white;
+  }
+  .phase-1 .phase-badge { background: var(--sheets-color); }
+  .phase-2 .phase-badge { background: var(--gas-color); }
+  .phase-3 .phase-badge { background: var(--editor-color); }
+  .phase-title { font-size: 14px; font-weight: 700; }
+  .phase ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .phase ul li {
+    font-size: 12px;
+    padding: 6px 10px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.4;
+  }
+  .phase ul li .check { flex-shrink: 0; }
+
+  /* ── 技術スタック ── */
+  .tech-stack {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+  .tech-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 12px 18px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .tech-icon { font-size: 24px; }
+  .tech-info h4 { font-size: 13px; font-weight: 700; }
+  .tech-info p { font-size: 11px; color: var(--text-muted); }
+  .tech-free {
+    font-size: 9px;
+    font-weight: 700;
+    background: #e8f5e9;
+    color: var(--sheets-color);
+    padding: 1px 6px;
+    border-radius: 6px;
+    margin-left: 4px;
+  }
+
+  /* ── フッター ── */
+  .page-footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ── レスポンシブ ── */
+  @media (max-width: 900px) {
+    .systems-grid { grid-template-columns: repeat(2, 1fr); }
+    .triggers-grid { grid-template-columns: 1fr; }
+    .chatwork-channels { grid-template-columns: 1fr; }
+    .impact-grid { grid-template-columns: repeat(2, 1fr); }
+    .roadmap-phases { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ページヘッダー -->
+<div class="page-header">
+  <div class="badge">Google Apps Script + Chatwork API</div>
+  <h1>YouTube運営 業務自動化 全体設計図</h1>
+  <p>Googleスプレッドシートを起点とした、YouTubeチャンネル運営業務の完全自動化アーキテクチャ</p>
+</div>
+
+<!-- ① 関連システム -->
+<div class="section-title">01 — 関連システム</div>
+<div class="systems-grid" style="margin-bottom:48px;">
+  <div class="system-card sheets">
+    <span class="icon">📊</span>
+    <h3>Google Spreadsheet</h3>
+    <p>全業務の起点。<br>運営スケジュール・編集者管理の2シートで管理。ステータス変更が自動化のトリガー。</p>
+  </div>
+  <div class="system-card chatwork">
+    <span class="icon">💬</span>
+    <h3>Chatwork</h3>
+    <p>3チャンネル構成。<br>クライアント・外注編集者・同僚との全コミュニケーション拠点。</p>
+  </div>
+  <div class="system-card gas">
+    <span class="icon">⚙️</span>
+    <h3>Google Apps Script</h3>
+    <p>自動化エンジン。<br>Sheetsの変更を検知し、APIを介してChatworkへ自動メッセージ送信。追加コストゼロ。</p>
+  </div>
+  <div class="system-card vimeo-wp">
+    <span class="icon">🎬</span>
+    <h3>Vimeo + WordPress</h3>
+    <p>オンラインサロン配信基盤。<br>Vimeo動画をWordPressに埋め込み。公開後の報告も自動化対象。</p>
+  </div>
+</div>
+
+<!-- ② スプレッドシート構造 -->
+<div class="section-title">02 — スプレッドシート構造</div>
+<div class="sheet-overview">
+
+  <div style="margin-bottom:28px;">
+    <div class="sheet-tabs">
+      <div class="sheet-tab active-tab">📋 運営スケジュール</div>
+      <div class="sheet-tab inactive-tab">👥 編集者管理</div>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">⚡ マークはステータス変更が自動化のトリガーになる列</div>
+    <div class="sheet-columns">
+      <div class="col-group g-base">
+        <div class="col-group-header">基本情報</div>
+        <div class="col-group-body">
+          <div class="col-item">
+            <span class="col-letter">A</span>
+            <span class="col-name">日時</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-group g-event">
+        <div class="col-group-header">イベント</div>
+        <div class="col-group-body">
+          <div class="col-item">
+            <span class="col-letter">B</span>
+            <span class="col-name">イベント①</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">C</span>
+            <span class="col-name">イベント②</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-group g-yt">
+        <div class="col-group-header">YouTube</div>
+        <div class="col-group-body">
+          <div class="col-item">
+            <span class="col-letter">D</span>
+            <span class="col-name">メモ</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">E</span>
+            <span class="col-name">DxD限定</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-group g-outsource">
+        <div class="col-group-header">外注管理</div>
+        <div class="col-group-body">
+          <div class="col-item">
+            <span class="col-letter">F</span>
+            <span class="col-name">編集者</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">G</span>
+            <span class="col-name">依頼本数</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">H</span>
+            <span class="col-name">依頼日</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">I</span>
+            <span class="col-name">納品予定日</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">J</span>
+            <span class="col-name">納品日</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-group g-publish">
+        <div class="col-group-header">公開管理</div>
+        <div class="col-group-body">
+          <div class="col-item trigger-col">
+            <span class="col-letter">K</span>
+            <span class="col-name">ステータス</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">L</span>
+            <span class="col-name">完成動画</span>
+          </div>
+          <div class="col-item trigger-col">
+            <span class="col-letter">M</span>
+            <span class="col-name">公開設定</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">N</span>
+            <span class="col-name">BGM無保存</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-group g-sns">
+        <div class="col-group-header">SNS</div>
+        <div class="col-group-body">
+          <div class="col-item">
+            <span class="col-letter">O</span>
+            <span class="col-name">動画タイトル</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">P</span>
+            <span class="col-name">Shorts予約</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">Q</span>
+            <span class="col-name">X公開予約</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">R</span>
+            <span class="col-name">TikTok投稿</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-group g-salon">
+        <div class="col-group-header">DxD GOLF MONSTERS（オンラインサロン）</div>
+        <div class="col-group-body">
+          <div class="col-item">
+            <span class="col-letter">S</span>
+            <span class="col-name">動画タイトル</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">T</span>
+            <span class="col-name">投稿ページ</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">U</span>
+            <span class="col-name">Vimeo_URL</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">V</span>
+            <span class="col-name">Vimeo_埋込</span>
+          </div>
+          <div class="col-item trigger-col">
+            <span class="col-letter">W</span>
+            <span class="col-name">公開設定</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 編集者管理シート -->
+  <div>
+    <div class="sheet-tabs">
+      <div class="sheet-tab inactive-tab">📋 運営スケジュール</div>
+      <div class="sheet-tab active-tab">👥 編集者管理</div>
+    </div>
+    <div class="sheet-columns">
+      <div class="col-group g-base">
+        <div class="col-group-header">編集者</div>
+        <div class="col-group-body">
+          <div class="col-item">
+            <span class="col-letter">A</span>
+            <span class="col-name">名前</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-group g-outsource">
+        <div class="col-group-header">依頼動画スロット（①〜⑥）</div>
+        <div class="col-group-body">
+          <div class="col-item">
+            <span class="col-letter">B</span>
+            <span class="col-name">依頼動画①</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">C</span>
+            <span class="col-name">依頼動画②</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">D</span>
+            <span class="col-name">依頼動画③</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">E</span>
+            <span class="col-name">依頼動画④</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">F</span>
+            <span class="col-name">依頼動画⑤</span>
+          </div>
+          <div class="col-item">
+            <span class="col-letter">G</span>
+            <span class="col-name">依頼動画⑥</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600;align-self:center;">スロットステータス：</div>
+      <span style="background:#e8f5e9;border:1.5px solid #4caf50;color:#2e7d32;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">空き</span>
+      <span style="background:#f3e5f5;border:1.5px solid #9c27b0;color:#4a148c;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">依頼中</span>
+      <span style="background:#e3f2fd;border:1.5px solid #2196f3;color:#0d47a1;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">編集中</span>
+      <span style="background:#e8f5e9;border:1.5px solid #43a047;color:#1b5e20;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">確認中</span>
+      <span style="background:#fff3e0;border:1.5px solid #ff9800;color:#e65100;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">先方確認中</span>
+      <span style="background:#fbe9e7;border:1.5px solid #ff5722;color:#bf360c;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">修正中</span>
+    </div>
+  </div>
+</div>
+
+<!-- ③ ステータスフロー -->
+<div class="section-title">03 — ステータスフロー（K列）</div>
+<div class="status-flow-card">
+  <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">⚡ = ステータス変更時にGASが自動アクションを実行</div>
+  <div class="status-flow">
+    <div class="status-pill s-confirm">素材確認中</div>
+    <div class="status-arrow">→</div>
+    <div class="status-pill s-request-plan">依頼する</div>
+    <div class="status-arrow">→</div>
+    <div class="status-pill s-requesting has-trigger">依頼中</div>
+    <div class="status-arrow">→</div>
+    <div class="status-pill s-editing">編集中</div>
+    <div class="status-arrow">→</div>
+    <div class="status-pill s-checking">確認中</div>
+    <div class="status-arrow">→</div>
+    <div class="status-pill s-client-check has-trigger">先方確認中</div>
+    <div class="status-arrow">→</div>
+    <div class="status-pill s-fixing">修正中</div>
+    <div class="status-arrow">→</div>
+    <div class="status-pill s-publish has-trigger">公開作業</div>
+    <div class="status-arrow">→</div>
+    <div class="status-pill s-done has-trigger">済</div>
+  </div>
+  <div style="margin-top:24px;padding:14px;background:#f8f9fa;border-radius:12px;font-size:12px;color:var(--text-muted);">
+    <strong style="color:var(--text);">「依頼する」→「依頼中」</strong>：GASが担当編集者のChatworkへ自動で依頼メッセージ送信 ＋ 編集者管理シートを自動更新<br>
+    <strong style="color:var(--text);">「先方確認中」</strong>：GASがクライアントのChatworkへ自動で確認依頼メッセージ送信<br>
+    <strong style="color:var(--text);">「公開作業」</strong>：GASが同僚のChatworkへダブルチェック依頼を自動送信<br>
+    <strong style="color:var(--text);">「済」</strong>：GASが編集者管理シートの該当スロットを「空き」に自動更新
+  </div>
+</div>
+
+<!-- ④ Chatworkチャンネル構成 -->
+<div class="section-title">04 — Chatwork チャンネル構成</div>
+<div class="chatwork-channels">
+  <div class="cw-channel cw-client">
+    <h4>💼 チャンネル1 — クライアント</h4>
+    <div class="cw-sub">クライアントとの全コミュニケーション</div>
+    <ul>
+      <li><span class="manual-badge">現:手動</span> 素材URL・編集指示の受領 → Sheetsへコピペ</li>
+      <li><span class="auto-badge">→自動化</span> 受信メッセージをWebhookで検知 → Sheetsへ自動書き込み</li>
+      <li><span class="auto-badge">→自動化</span> 確認依頼メッセージを自動送信（ステータス「先方確認中」トリガー）</li>
+      <li><span class="auto-badge">→自動化</span> 修正やりとり（部分自動化）</li>
+    </ul>
+  </div>
+  <div class="cw-channel cw-editor">
+    <h4>✂️ チャンネルn — 外注編集者（n人分）</h4>
+    <div class="cw-sub">編集者ごとに独立したチャンネル</div>
+    <ul>
+      <li><span class="auto-badge">→自動化</span> 編集依頼メッセージを自動送信（ステータス「依頼する」トリガー）</li>
+      <li><span class="auto-badge">→自動化</span> 依頼内容（動画タイトル・素材URL・編集指示）を自動添付</li>
+      <li><span class="manual-badge">現:手動</span> 修正やりとり</li>
+      <li><span class="manual-badge">現:手動</span> 納品連絡の受領</li>
+    </ul>
+  </div>
+  <div class="cw-channel cw-colleague">
+    <h4>👤 チャンネル2 — 同僚</h4>
+    <div class="cw-sub">公開前ダブルチェック用</div>
+    <ul>
+      <li><span class="auto-badge">→自動化</span> M列「公開設定」✅でダブルチェック依頼を自動送信</li>
+      <li><span class="auto-badge">→自動化</span> 確認完了返信でステータスを「済」に自動更新（Webhook）</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ⑤ トリガー別詳細フロー -->
+<div class="section-title">05 — トリガー別 自動化フロー</div>
+<div class="triggers-grid">
+
+  <!-- トリガー1 -->
+  <div class="trigger-card tc-1">
+    <div class="trigger-number">1</div>
+    <h3>素材受領の自動記録</h3>
+    <div class="trigger-sub">クライアントからの素材URLと編集指示をSheetsへ自動書き込み</div>
+    <div class="flow-steps">
+      <div class="flow-step step-client">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">💼</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">クライアント（Chatwork チャンネル1）</div>
+          <div class="step-desc">メッセージを送信</div>
+          <div class="step-data">・ギガファイル便URL<br>・編集指示テキスト</div>
+        </div>
+      </div>
+      <div class="flow-step step-gas">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">⚙️</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">GAS（Chatwork Webhook → 解析）</div>
+          <div class="step-desc">受信メッセージを自動解析してURL・指示を抽出</div>
+        </div>
+      </div>
+      <div class="flow-step step-sheets">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">📊</div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">Googleスプレッドシート（D列 メモ）</div>
+          <div class="step-desc">受信日をキーに該当行のD列へ<br>素材URL ＋ 編集指示を自動書き込み</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- トリガー2 -->
+  <div class="trigger-card tc-2">
+    <div class="trigger-number">2</div>
+    <h3>編集依頼の自動送信</h3>
+    <div class="trigger-sub">ステータスを「依頼する」に変えるだけで編集者へ自動依頼</div>
+    <div class="flow-steps">
+      <div class="flow-step step-sheets">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">⚡</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">トリガー（K列 → 「依頼する」）</div>
+          <div class="step-desc">F列から担当編集者を特定し処理開始</div>
+        </div>
+      </div>
+      <div class="flow-step step-gas">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">⚙️</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">GAS（自動処理）</div>
+          <div class="step-desc">依頼メッセージを自動生成</div>
+          <div class="step-data">・動画タイトル（D列）<br>・素材URL（D列メモから取得）<br>・編集指示（D列メモから取得）<br>・納品予定日（I列）</div>
+        </div>
+      </div>
+      <div class="flow-step step-editor">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">✂️</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">外注編集者（Chatwork チャンネルn）</div>
+          <div class="step-desc">担当編集者のチャンネルへ自動送信</div>
+        </div>
+      </div>
+      <div class="flow-step step-sheets">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">📊</div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">Sheets 自動更新</div>
+          <div class="step-desc">K列「依頼中」に自動更新<br>編集者管理シートの該当スロットも更新</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- トリガー3 -->
+  <div class="trigger-card tc-3">
+    <div class="trigger-number">3</div>
+    <h3>クライアント確認依頼の自動送信</h3>
+    <div class="trigger-sub">ステータスを「先方確認中」に変えるだけで確認依頼が飛ぶ</div>
+    <div class="flow-steps">
+      <div class="flow-step step-sheets">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">⚡</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">トリガー（K列 → 「先方確認中」）</div>
+          <div class="step-desc">GASが即座に処理開始</div>
+        </div>
+      </div>
+      <div class="flow-step step-gas">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">⚙️</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">GAS（確認依頼メッセージ生成）</div>
+          <div class="step-desc">定型文に動画情報を自動埋め込み</div>
+          <div class="step-data">・動画タイトル<br>・完成動画リンク（L列）<br>・確認期限（自動計算）</div>
+        </div>
+      </div>
+      <div class="flow-step step-client">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">💼</div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">クライアント（Chatwork チャンネル1）</div>
+          <div class="step-desc">確認依頼メッセージを自動受信</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- トリガー4 -->
+  <div class="trigger-card tc-4">
+    <div class="trigger-number">4</div>
+    <h3>YouTube公開後ダブルチェック依頼</h3>
+    <div class="trigger-sub">公開設定チェックで同僚へ自動依頼、返信で「済」に自動更新</div>
+    <div class="flow-steps">
+      <div class="flow-step step-sheets">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">⚡</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">トリガー（M列「公開設定」✅チェック）</div>
+          <div class="step-desc">チェックボックスONでGASが起動</div>
+        </div>
+      </div>
+      <div class="flow-step step-colleague">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">👤</div>
+          <div class="flow-step-connector"></div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">同僚（Chatwork チャンネル2）</div>
+          <div class="step-desc">ダブルチェック依頼を自動受信</div>
+          <div class="step-data">・動画タイトル<br>・YouTube公開URL<br>・チェック項目リスト</div>
+        </div>
+      </div>
+      <div class="flow-step step-sheets">
+        <div class="flow-step-line">
+          <div class="flow-step-dot">📊</div>
+        </div>
+        <div class="flow-step-content">
+          <div class="step-label">確認完了後（Sheets 自動更新）</div>
+          <div class="step-desc">K列を「済」に自動更新<br>編集者管理スロットを「空き」に自動更新</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- トリガー5（フル幅） -->
+  <div class="trigger-card tc-5" style="grid-column: 1 / -1;">
+    <div class="trigger-number">5</div>
+    <h3>オンラインサロン 公開完了報告の自動送信</h3>
+    <div class="trigger-sub">W列にチェックを入れるだけで、クライアントへの報告が完全自動化（別シートの定型文テンプレートが不要に）</div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.8px;">現在のフロー（手動）</div>
+        <div class="flow-steps">
+          <div class="flow-step step-sheets">
+            <div class="flow-step-line">
+              <div class="flow-step-dot" style="background:#fef3c7;border-color:#d97706;color:#d97706;">📝</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-content">
+              <div class="step-label" style="color:#d97706;">別シート（定型文作成）</div>
+              <div class="step-desc">日付をキーに関数で各データを引用して定型文を生成</div>
+            </div>
+          </div>
+          <div class="flow-step step-sheets">
+            <div class="flow-step-line">
+              <div class="flow-step-dot" style="background:#fef3c7;border-color:#d97706;color:#d97706;">📋</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-content">
+              <div class="step-label" style="color:#d97706;">手動コピペ</div>
+              <div class="step-desc">生成されたテキストをChatworkへコピペ</div>
+            </div>
+          </div>
+          <div class="flow-step step-client">
+            <div class="flow-step-line">
+              <div class="flow-step-dot">💼</div>
+            </div>
+            <div class="flow-step-content">
+              <div class="step-label">クライアント</div>
+              <div class="step-desc">報告メッセージを受信</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--vimeo-color);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.8px;">自動化後のフロー</div>
+        <div class="flow-steps">
+          <div class="flow-step step-vimeo">
+            <div class="flow-step-line">
+              <div class="flow-step-dot">⚡</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-content">
+              <div class="step-label">トリガー（W列「公開設定」✅チェック）</div>
+              <div class="step-desc">チェックONでGASが即座に起動</div>
+            </div>
+          </div>
+          <div class="flow-step step-gas">
+            <div class="flow-step-line">
+              <div class="flow-step-dot">⚙️</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-content">
+              <div class="step-label">GAS（報告メッセージ自動生成）</div>
+              <div class="step-desc">同じ行から必要データを自動取得</div>
+              <div class="step-data">・動画タイトル（S列）<br>・投稿ページURL（T列）<br>・Vimeo_URL（U列）<br>・Vimeo_埋込コード（V列）</div>
+            </div>
+          </div>
+          <div class="flow-step step-client">
+            <div class="flow-step-line">
+              <div class="flow-step-dot">💼</div>
+            </div>
+            <div class="flow-step-content">
+              <div class="step-label">クライアント（Chatwork チャンネル1）</div>
+              <div class="step-desc">報告メッセージを自動受信<br><strong style="color:var(--sheets-color);">別シートのテンプレートは不要に！</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ 削減効果 -->
+<div class="section-title">06 — 自動化による削減効果</div>
+<div class="impact-grid">
+  <div class="impact-card">
+    <div class="impact-icon">📋</div>
+    <span class="impact-num">6</span>
+    <div class="impact-label">手動コピペ作業を撤廃</div>
+    <div class="impact-desc">Chatwork→Sheets、Sheets→Chatworkの全コピペが自動化</div>
+  </div>
+  <div class="impact-card">
+    <div class="impact-icon">💬</div>
+    <span class="impact-num">5+</span>
+    <div class="impact-label">定型メッセージを自動送信</div>
+    <div class="impact-desc">編集依頼・確認依頼・ダブルチェック・報告など全て自動</div>
+  </div>
+  <div class="impact-card">
+    <div class="impact-icon">📊</div>
+    <span class="impact-num">0</span>
+    <div class="impact-label">手動シート更新</div>
+    <div class="impact-desc">編集者管理シートのステータスが全て自動で同期</div>
+  </div>
+  <div class="impact-card">
+    <div class="impact-icon">🗑️</div>
+    <span class="impact-num">1</span>
+    <div class="impact-label">不要になるシート</div>
+    <div class="impact-desc">定型文作成用の別シートが完全に不要になる</div>
+  </div>
+  <div class="impact-card">
+    <div class="impact-icon">⚠️</div>
+    <span class="impact-num">0</span>
+    <div class="impact-label">コピペミス・送信漏れ</div>
+    <div class="impact-desc">全自動化によりヒューマンエラーを根絶</div>
+  </div>
+  <div class="impact-card">
+    <div class="impact-icon">💰</div>
+    <span class="impact-num">¥0</span>
+    <div class="impact-label">追加コスト</div>
+    <div class="impact-desc">GAS＋既存のChatwork・Sheetsのみで実現。外部サービス不要</div>
+  </div>
+</div>
+
+<!-- ⑦ 実装ロードマップ -->
+<div class="section-title">07 — 実装ロードマップ（推奨順）</div>
+<div class="roadmap">
+  <div class="roadmap-phases">
+    <div class="phase phase-1">
+      <div class="phase-header">
+        <span class="phase-badge">Phase 1</span>
+        <div class="phase-title">即効性が高い自動化</div>
+      </div>
+      <ul>
+        <li><span class="check">✅</span> トリガー⑤：オンラインサロン報告の自動送信<br><small style="color:var(--text-muted);">定型文シートが即不要になる</small></li>
+        <li><span class="check">✅</span> 2シート間のステータス自動同期<br><small style="color:var(--text-muted);">「済」→編集者管理「空き」の自動化</small></li>
+      </ul>
+    </div>
+    <div class="phase phase-2">
+      <div class="phase-header">
+        <span class="phase-badge">Phase 2</span>
+        <div class="phase-title">コア業務の自動化</div>
+      </div>
+      <ul>
+        <li><span class="check">✅</span> トリガー②：編集依頼の自動送信<br><small style="color:var(--text-muted);">毎回発生する手間を大幅削減</small></li>
+        <li><span class="check">✅</span> トリガー③：クライアント確認依頼の自動化</li>
+        <li><span class="check">✅</span> トリガー④：公開後ダブルチェックの自動化</li>
+      </ul>
+    </div>
+    <div class="phase phase-3">
+      <div class="phase-header">
+        <span class="phase-badge">Phase 3</span>
+        <div class="phase-title">インバウンドの自動化</div>
+      </div>
+      <ul>
+        <li><span class="check">✅</span> トリガー①：素材URL受領の自動記録<br><small style="color:var(--text-muted);">Webhook設定が必要、難易度やや高め</small></li>
+        <li><span class="check">✅</span> メッセージ解析の精度向上<br><small style="color:var(--text-muted);">クライアントメッセージのフォーマット整備</small></li>
+        <li><span class="check">✅</span> ダッシュボード連携・レポート自動生成</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ⑧ 技術スタック -->
+<div class="section-title">08 — 技術スタック</div>
+<div class="tech-stack">
+  <div class="tech-item">
+    <div class="tech-icon">⚙️</div>
+    <div class="tech-info">
+      <h4>Google Apps Script <span class="tech-free">無料</span></h4>
+      <p>自動化エンジン。onEditトリガー＋Chatwork API呼び出し</p>
+    </div>
+  </div>
+  <div class="tech-item">
+    <div class="tech-icon">📊</div>
+    <div class="tech-info">
+      <h4>Google Sheets API <span class="tech-free">無料</span></h4>
+      <p>GASから直接操作。セル読み書き・ステータス更新</p>
+    </div>
+  </div>
+  <div class="tech-item">
+    <div class="tech-icon">💬</div>
+    <div class="tech-info">
+      <h4>Chatwork API <span class="tech-free">無料</span></h4>
+      <p>メッセージ送信・Webhook受信。全チャンネル対応</p>
+    </div>
+  </div>
+  <div class="tech-item">
+    <div class="tech-icon">🌐</div>
+    <div class="tech-info">
+      <h4>GAS Web App</h4>
+      <p>ChatworkのWebhook受信エンドポイントとして機能</p>
+    </div>
+  </div>
+</div>
+
+<div class="page-footer">
+  YouTube運営 業務自動化 全体設計図 — Google Apps Script + Chatwork API — 追加コスト ¥0
+</div>
+
+</body>
+</html>
