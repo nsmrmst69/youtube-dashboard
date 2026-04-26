@@ -7,10 +7,10 @@
   <key>Label</key>
   <string>com.youtube-dashboard</string>
 
-  <!-- 実行するコマンド（python3 のフルパスを指定） -->
+  <!-- 実行するコマンド（venv内のpython3を使用） -->
   <key>ProgramArguments</key>
   <array>
-    <string>/opt/homebrew/bin/python3</string>
+    <string>/Users/masatonishimori/src/youtube-dashboard/venv/bin/python3</string>
     <string>/Users/masatonishimori/src/youtube-dashboard/dashboard.py</string>
   </array>
 

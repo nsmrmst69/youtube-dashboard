@@ -78,7 +78,7 @@ const CONFIG = {
 //  メイン：onEdit トリガー
 //  ※ GASエディタで「トリガー追加」→「onEdit」を設定してください
 // ============================================================
-function onEdit(e) {
+function onEditSalonReport(e) {
   const range = e.range;
   const sheet = range.getSheet();
 
