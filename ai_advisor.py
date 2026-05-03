@@ -98,6 +98,7 @@ def _build_prompt(videos: list[dict[str, Any]]) -> str:
     ]
 
     for v in videos:
+        director_done = str(v.get('director_done', '')).upper() == 'TRUE'
         line = (
             f"- 公開日: {v.get('publish_date', '不明')}"
             f" | タイトル: {v.get('title', '不明')}"
@@ -105,6 +106,7 @@ def _build_prompt(videos: list[dict[str, Any]]) -> str:
             f" | ステータス: {v.get('status', '不明')}"
             f" | 依頼日: {v.get('request_date', '未')}"
             f" | 納品予定: {v.get('delivery_due', '未')}"
+            f" | ディレクター公開作業完了: {'済' if director_done else '未'}"
         )
         lines.append(line)
 
@@ -119,6 +121,7 @@ def _build_prompt(videos: list[dict[str, Any]]) -> str:
         "先方確認中: クライアントが確認中",
         "修正中: 修正対応中",
         "公開作業: YouTubeへのアップロード・設定作業中",
+        "  ※「公開作業」かつ「ディレクター公開作業完了: 済」の場合は、ディレクターの作業は完了しているが同僚のダブルチェックがまだのため、アクションは「同僚にダブルチェックを依頼する」とすること",
         "済: 完了",
         "",
         "【指示】",

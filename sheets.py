@@ -39,6 +39,7 @@ COLUMN_INDEX_MAP = {
     8:  "delivery_due",   # I列: 納品予定日
     9:  "complete_date",  # J列: 納品日
     10: "status",         # K列: ステータス
+    12: "director_done",  # M列: ディレクター公開作業完了フラグ（TRUE=完了）
 }
 
 
