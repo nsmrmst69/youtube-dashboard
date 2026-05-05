@@ -19,11 +19,14 @@
 //  ※ この関数は手動トリガー不要（onOpen は特殊トリガー）
 // ============================================================
 function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('動画素材')
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('動画素材')
     .addItem('素材を転記', 'showMaterialDialog')
     .addSeparator()
     .addItem('転記済みをリセット（選択行）', 'resetTransferredMark')
+    .addToUi();
+  ui.createMenu('編集依頼')
+    .addItem('依頼文を生成（選択行）', 'generateRequestMessage')
     .addToUi();
 }
 

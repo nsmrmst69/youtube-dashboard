@@ -4,7 +4,6 @@
 //  【動作】
 //  Googleフォーム送信時に onFormSubmit トリガーが発火し、
 //  1素材分のデータを「動画素材」シートに自動転記する。
-//  転記完了後、Chatwork の担当者ルームに受領通知を送信する。
 //
 //  【フォームのフィールド構成】（順番通りに作成すること）
 //  タイムスタンプ（自動）
@@ -29,29 +28,28 @@
 // ============================================================
 //  ▼ 設定
 //
-//  APIトークン・ルームIDは GAS スクリプトプロパティで管理します。
+//  通知先メールアドレスは GAS スクリプトプロパティで管理します。
 //
 //  【スクリプトプロパティの設定方法】
 //  GASエディタ → 左メニュー「プロジェクトの設定（歯車）」
 //  →「スクリプト プロパティ」→「プロパティを追加」
-//  以下のキーと値を登録してください：
 //
-//  キー                     値
-//  ─────────────────────────────────────────────────
-//  CHATWORK_API_TOKEN         （ChatworkのAPIトークン）
-//  STAFF_ROOM_ID              （社内担当者ルームID）
-//  MATERIAL_TO_ACCOUNT_IDS    （素材受領通知先アカウントID カンマ区切り 例: 123456,789012）
+  //  キー                  値
+  //  ──────────────────────────────────────
+  //  NOTIFY_EMAIL          （通知を受け取るメールアドレス）
+  //  CHATWORK_API_TOKEN    （ChatworkのAPIトークン）
+  //  CLIENT_ROOM_ID1       （送信先クライアントルームID）
 //
 // ============================================================
 function getConfig_material_() {
-  const props  = PropertiesService.getScriptProperties();
-  const toIds  = props.getProperty('MATERIAL_TO_ACCOUNT_IDS');
+  const props = PropertiesService.getScriptProperties();
   return {
+    NOTIFY_EMAIL:       props.getProperty('NOTIFY_EMAIL') || Session.getActiveUser().getEmail(),
     CHATWORK_API_TOKEN: props.getProperty('CHATWORK_API_TOKEN'),
-    STAFF_ROOM_ID:      props.getProperty('STAFF_ROOM_ID'),
-    TO_ACCOUNT_IDS:     toIds ? toIds.split(',').map(function(s) { return s.trim(); }) : [],
+    CLIENT_ROOM_ID:     props.getProperty('CLIENT_ROOM_ID1'),
   };
 }
+
 
 const MATERIAL_CONFIG = {
   MATERIAL_SHEET_NAME: '動画素材',
@@ -69,8 +67,6 @@ const MATERIAL_CONFIG = {
     MEMO:      5,
   },
 };
-// ▲ 設定ここまで
-// ============================================================
 
 
 // ============================================================
@@ -78,12 +74,7 @@ const MATERIAL_CONFIG = {
 //  ※ GASエディタで「トリガー追加」→ フォーム送信時 → onFormSubmit を設定
 // ============================================================
 function onFormSubmit(e) {
-  const secrets = getConfig_material_();
-  if (!secrets.CHATWORK_API_TOKEN || !secrets.STAFF_ROOM_ID) {
-    Logger.log('⚠️ スクリプトプロパティが未設定: CHATWORK_API_TOKEN / STAFF_ROOM_ID');
-    return;
-  }
-
+  const config    = getConfig_material_();
   const responses = e.values;
   const C         = MATERIAL_CONFIG.COL;
 
@@ -105,13 +96,23 @@ function onFormSubmit(e) {
 
   Logger.log('✅ 転記完了: ' + serial + ' / ' + title);
 
-  // Chatwork 通知
-  const message = buildReceiveMessage_(serial, title, url1, url2, url3, memo, secrets.TO_ACCOUNT_IDS);
+  // Gmail 通知
   try {
-    sendToChatwork_(secrets.STAFF_ROOM_ID, secrets.CHATWORK_API_TOKEN, message);
-    Logger.log('✅ Chatwork通知送信完了');
+    sendGmailNotification_(config.NOTIFY_EMAIL, serial, title, url1, url2, url3, memo);
+    Logger.log('✅ Gmail通知送信完了: ' + config.NOTIFY_EMAIL);
   } catch (err) {
-    Logger.log('❌ Chatwork送信エラー: ' + err.toString());
+    Logger.log('❌ Gmail送信エラー: ' + err.toString());
+  }
+
+  // Chatwork クライアントルームへのメモ送信
+  if (config.CHATWORK_API_TOKEN && config.CLIENT_ROOM_ID) {
+    try {
+      const cwMessage = buildChatworkMemo_(serial, title, url1, url2, url3, memo);
+      sendToChatwork_(config.CLIENT_ROOM_ID, config.CHATWORK_API_TOKEN, cwMessage);
+      Logger.log('✅ Chatworkメモ送信完了');
+    } catch (err) {
+      Logger.log('❌ Chatwork送信エラー: ' + err.toString());
+    }
   }
 }
 
@@ -186,15 +187,10 @@ function getOrCreateMaterialSheet_() {
 
 
 // ============================================================
-//  Chatwork 受領通知メッセージ生成
+//  Chatwork クライアントルームへのメモ送信（宛先なし）
 // ============================================================
-function buildReceiveMessage_(serial, title, url1, url2, url3, memo, toAccountIds) {
-  const toLines = (toAccountIds || [])
-    .map(function(id) { return '[To:' + id + ']'; })
-    .join('\n');
-
+function buildChatworkMemo_(serial, title, url1, url2, url3, memo) {
   const urls = [url1, url2, url3].filter(function(u) { return u !== ''; });
-
   const urlLines = urls.map(function(url, idx) {
     return '  URL' + (idx + 1) + ': ' + url;
   }).join('\n');
@@ -202,7 +198,6 @@ function buildReceiveMessage_(serial, title, url1, url2, url3, memo, toAccountId
   const memoLine = memo ? '\n\n【メモ】\n' + memo : '';
 
   return (
-    (toLines ? toLines + '\n' : '') +
     '[info][title]動画素材を受領しました[/title]' +
     serial + ': ' + title + '\n' +
     urlLines +
@@ -212,28 +207,45 @@ function buildReceiveMessage_(serial, title, url1, url2, url3, memo, toAccountId
 }
 
 
-// ============================================================
-//  Chatwork API 送信
-// ============================================================
 function sendToChatwork_(roomId, apiToken, message) {
   const url = 'https://api.chatwork.com/v2/rooms/' + roomId + '/messages';
-
   const options = {
     method:             'POST',
     headers:            { 'X-ChatWorkToken': apiToken },
     payload:            { body: message },
     muteHttpExceptions: true,
   };
-
   const response   = UrlFetchApp.fetch(url, options);
   const statusCode = response.getResponseCode();
   const resultText = response.getContentText();
-
   if (statusCode !== 200) {
     throw new Error('Chatwork API エラー (HTTP ' + statusCode + '): ' + resultText);
   }
-
   return JSON.parse(resultText);
+}
+
+
+// ============================================================
+//  Gmail 通知送信
+// ============================================================
+function sendGmailNotification_(toEmail, serial, title, url1, url2, url3, memo) {
+  const subject = '【動画素材受領】' + serial + ': ' + title;
+
+  const urls = [url1, url2, url3].filter(function(u) { return u !== ''; });
+  const urlLines = urls.map(function(url, idx) {
+    return 'URL' + (idx + 1) + ': ' + url;
+  }).join('\n');
+
+  const body = [
+    '動画素材を受領しました。',
+    '',
+    '通番: ' + serial,
+    'タイトル: ' + title,
+    urlLines,
+    memo ? '\nメモ:\n' + memo : '',
+  ].join('\n');
+
+  GmailApp.sendEmail(toEmail, subject, body);
 }
 
 
